@@ -1,25 +1,25 @@
 # Design TODO List
 
 ## Core Architecture
-- [ ] **World (Forge2D)**
-    - [ ] Design the main loop for physical updates (leveraging `Forge2DGame`).
-    - [ ] Integrate `PeriodicBoundarySystem` for topological management.
+- [x] **World (Forge2D)**
+    - [x] Design the main loop for physical updates (leveraging `Forge2DGame`).
+    - [x] Integrate `PeriodicBoundarySystem` for topological management.
     - [ ] Define injection mechanism for `ConnectionSystem` and `BreakSystem`.
     - [ ] Ensure attraction and detachment logic runs within the World update.
 
-- [ ] **EntityManager**
-    - [ ] Design `BodyComponent` management (Flame wrapper for Body).
-    - [ ] Define `PolygonPart` management per Body.
+- [x] **EntityManager**
+    - [x] Design `BodyComponent` management (Flame wrapper for Body).
+    - [x] Define `PolygonPart` management per Body.
     - [ ] Design logic for merging Fixtures or regenerating Bodies upon combination (handling `BodyComponent` lifecycle: remove old, add new).
 
 ## Components
-- [ ] **PolygonPart**
-    - [ ] Define data structure for a single polygon part.
-    - [ ] Design `Connector` holding mechanism.
-    - [ ] Define Fixture properties for Forge2D integration.
+- [x] **PolygonPart**
+    - [x] Define data structure for a single polygon part.
+    - [x] Design `Connector` holding mechanism.
+    - [x] Define Fixture properties for Forge2D integration.
 
-- [ ] **Connector**
-    - [ ] Define data structure (position, type, orientation, state).
+- [x] **Connector**
+    - [x] Define data structure (position, type, orientation, state).
     - [ ] Design the "pair type" logic (must be a matching pair).
     - [ ] Define connection state management.
 
@@ -47,8 +47,13 @@
     - [ ] Design subscription mechanism for World, EntityManager, UI (using Dart Streams or ValueNotifiers).
 
 ## Space & Physics
-- [ ] **PeriodicBoundarySystem**
-    - [ ] Design coordinate mapping to torus space.
+- [x] **PeriodicBoundarySystem**
+    - [x] Design coordinate mapping to torus space.
     - [ ] Implement shortest distance calculation considering boundaries.
     - [ ] Ensure attraction and connection logic uses boundary-aware distances.
-    - [ ] Implement `body.setTransform` logic for wrapping bodies at edges.
+    - [x] Implement `body.setTransform` logic for wrapping bodies at edges.
+
+## UI / UX
+- [x] **Camera Controls**
+    - [x] Implement Zoom controls (Scroll/Pinch).
+    - [x] Ensure fixed world size with zoomable view.

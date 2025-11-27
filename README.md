@@ -1,16 +1,25 @@
-# self_assembly
+# Self Assembly Simulation
 
-A new Flutter project.
+自己組織化プロセスのシミュレーション。Flame と Forge2D (Box2D) を使用して実装されています。
 
-## Getting Started
+## 機能
 
-This project is a starting point for a Flutter application.
+* **物理シミュレーション**: Forge2D による剛体物理演算。
+* **周期境界条件**: 100x100 の空間で、端に行くと反対側から出てくるトーラス構造。
+* **ズーム機能**: マウスホイールやピンチ操作で視点の拡大縮小が可能。
+* **多角形パーツ**: 三角形などのパーツが結合して複雑な形状を作る（結合ロジックは今後実装予定）。
 
-A few resources to get you started if this is your first Flutter project:
+## 実行方法
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter run -d chrome
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 開発状況
+
+* [x] コアアーキテクチャ (Flame/Forge2D)
+* [x] 基本コンポーネント (Body, Polygon, Connector)
+* [x] 周期境界システム
+* [x] ズーム操作
+* [ ] 結合システム (ConnectionSystem)
+* [ ] 分離システム (BreakSystem)
