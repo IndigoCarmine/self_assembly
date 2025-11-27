@@ -8,6 +8,8 @@ import '../components/connector.dart';
 class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame> {
   final double attractionRange = 5.0;
   final double attractionForce = 100.0;
+  final double connectionThreshold = 0.5;
+  final double angleThreshold = 0.3;
 
   @override
   void update(double dt) {
@@ -16,7 +18,6 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     final bodies = game.entityManager.bodies;
     if (bodies.isEmpty) return;
 
-    // Iterate all pairs of bodies
     for (var i = 0; i < bodies.length; i++) {
       for (var j = i + 1; j < bodies.length; j++) {
         final bodyA = bodies[i];
@@ -24,7 +25,6 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
 
         if (!bodyA.isMounted || !bodyB.isMounted) continue;
         
-        // Check all connector pairs between bodyA and bodyB
         _checkConnectors(bodyA, bodyB);
       }
     }
@@ -38,35 +38,37 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
 
     for (final partA in bodyA.parts) {
       for (final connA in partA.connectors) {
-        // Calculate absolute position and angle of connA
-        // Assuming part is centered at body origin for now (as per current impl)
-        // If part had offset, we'd add it.
-        
-        final connAPos = posA + (connA.relativePosition..rotate(angleA));
-        // final connAAngle = angleA + connA.relativeAngle;
+        final rotatedA = Vector2(
+          connA.relativePosition.x * cos(angleA) - connA.relativePosition.y * sin(angleA),
+          connA.relativePosition.x * sin(angleA) + connA.relativePosition.y * cos(angleA),
+        );
+        final connAPos = posA + rotatedA;
+        final connAAngle = angleA + connA.relativeAngle;
 
         for (final partB in bodyB.parts) {
           for (final connB in partB.connectors) {
-            // Check compatibility
             if (!_areCompatible(connA, connB)) continue;
 
-            // Calculate absolute position of connB
             final rotatedB = Vector2(
               connB.relativePosition.x * cos(angleB) - connB.relativePosition.y * sin(angleB),
               connB.relativePosition.x * sin(angleB) + connB.relativePosition.y * cos(angleB),
             );
             final connBPos = posB + rotatedB;
+            final connBAngle = angleB + connB.relativeAngle;
 
-            // Calculate distance with PBC
             final distVec = _getShortestVector(connAPos, connBPos);
             final dist = distVec.length;
 
-            if (dist < attractionRange) {
-              // Apply attraction force
+            if (dist < connectionThreshold) {
+              final angleDiff = _normalizeAngle(connAAngle - connBAngle);
+              if ((angleDiff - pi).abs() < angleThreshold) {
+                print('Connection detected!');
+                return;
+              }
+            } else if (dist < attractionRange) {
               final forceDir = distVec.normalized();
               final force = forceDir * attractionForce * (1.0 - dist / attractionRange);
 
-              // Apply force to bodies at connector positions
               bodyA.body.applyForce(force, point: connAPos);
               bodyB.body.applyForce(-force, point: connBPos);
             }
@@ -77,9 +79,14 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
   }
 
   bool _areCompatible(Connector a, Connector b) {
-    // Plus attracts Minus
     return (a.type == ConnectorType.plus && b.type == ConnectorType.minus) ||
            (a.type == ConnectorType.minus && b.type == ConnectorType.plus);
+  }
+
+  double _normalizeAngle(double angle) {
+    while (angle > pi) angle -= 2 * pi;
+    while (angle < -pi) angle += 2 * pi;
+    return angle;
   }
 
   Vector2 _getShortestVector(Vector2 from, Vector2 to) {

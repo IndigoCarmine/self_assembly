@@ -33,17 +33,25 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
     for (var i = 0; i < 20; i++) {
       final connectorType = rng.nextBool() ? ConnectorType.plus : ConnectorType.minus;
       
+      // Triangle vertices
+      final v0 = Vector2(0, -2);
+      final v1 = Vector2(2, 2);
+      final v2 = Vector2(-2, 2);
+      
+      // Calculate edge midpoint and perpendicular angle
+      // Using the top edge (v0 to v1)
+      final edgeMid = (v0 + v1) / 2;
+      final edgeVec = v1 - v0;
+      final edgeAngle = atan2(edgeVec.y, edgeVec.x);
+      final perpAngle = edgeAngle + pi / 2; // Perpendicular (outward)
+      
       final parts = [
         PolygonPart(
-          vertices: [
-            Vector2(0, -2),
-            Vector2(2, 2),
-            Vector2(-2, 2),
-          ],
+          vertices: [v0, v1, v2],
           connectors: [
             Connector(
-              relativePosition: Vector2(0, -2),
-              relativeAngle: -pi / 2, // Pointing up
+              relativePosition: edgeMid,
+              relativeAngle: perpAngle,
               type: connectorType,
             ),
           ],
