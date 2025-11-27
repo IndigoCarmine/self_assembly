@@ -104,13 +104,14 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     for (var i = 0; i < count; i++) {
       final dataA = _cachedConnectors[i];
       
-      // Skip if connector was connected during this frame
+      // Skip if connector was connected during this frame (necessary because
+      // _connectBodies may mark connectors as connected during iteration)
       if (dataA.connector.isConnected) continue;
 
       for (var j = i + 1; j < count; j++) {
         final dataB = _cachedConnectors[j];
         
-        // Skip if same body or connector already connected
+        // Skip if same body or connector was connected during this frame
         if (dataA.body == dataB.body) continue;
         if (dataB.connector.isConnected) continue;
 
