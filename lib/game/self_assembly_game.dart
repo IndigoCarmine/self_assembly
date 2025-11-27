@@ -8,6 +8,7 @@ import '../components/polygon_part.dart';
 import '../components/connector.dart';
 import '../systems/periodic_boundary_system.dart';
 import '../systems/connection_system.dart';
+import '../systems/break_system.dart';
 
 class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
   late final EntityManager entityManager;
@@ -24,6 +25,9 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
     
     // Add Connection System
     await add(ConnectionSystem());
+    
+    // Add Break System
+    await add(BreakSystem());
 
     entityManager = EntityManager();
     await add(entityManager);

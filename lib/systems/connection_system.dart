@@ -4,6 +4,7 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import '../game/self_assembly_game.dart';
 import '../components/body_component.dart';
 import '../components/connector.dart';
+import '../components/polygon_part.dart';
 
 class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame> {
   final double attractionRange = 5.0;
@@ -62,7 +63,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
             if (dist < connectionThreshold) {
               final angleDiff = _normalizeAngle(connAAngle - connBAngle);
               if ((angleDiff - pi).abs() < angleThreshold) {
-                print('Connection detected!');
+                // Trigger connection - merge bodies
+                _connectBodies(bodyA, bodyB, connA, connB, connAPos, connBPos);
                 return;
               }
             } else if (dist < attractionRange) {
@@ -81,6 +83,90 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
   bool _areCompatible(Connector a, Connector b) {
     return (a.type == ConnectorType.plus && b.type == ConnectorType.minus) ||
            (a.type == ConnectorType.minus && b.type == ConnectorType.plus);
+  }
+
+  void _connectBodies(
+    SelfAssemblyBody bodyA,
+    SelfAssemblyBody bodyB,
+    Connector connA,
+    Connector connB,
+    Vector2 connAPos,
+    Vector2 connBPos,
+  ) {
+    // Calculate the transformation needed to align connB to connA
+    final posA = bodyA.body.position;
+    final angleA = bodyA.body.angle;
+    final posB = bodyB.body.position;
+    final angleB = bodyB.body.angle;
+
+    // Combined parts from both bodies
+    final combinedParts = <PolygonPart>[];
+    
+    // Add parts from bodyA (no transformation needed)
+    combinedParts.addAll(bodyA.parts);
+    
+    // Add parts from bodyB with transformation
+    // We need to transform bodyB's parts to bodyA's local coordinate system
+    final deltaPos = posB - posA;
+    final deltaAngle = angleB - angleA;
+    
+    for (final partB in bodyB.parts) {
+      // Transform vertices
+      final transformedVertices = <Vector2>[];
+      for (final v in partB.vertices) {
+        // Rotate by deltaAngle, then translate by deltaPos
+        final rotated = Vector2(
+          v.x * cos(deltaAngle) - v.y * sin(deltaAngle),
+          v.x * sin(deltaAngle) + v.y * cos(deltaAngle),
+        );
+        transformedVertices.add(rotated + deltaPos);
+      }
+      
+      // Transform connectors
+      final transformedConnectors = <Connector>[];
+      for (final conn in partB.connectors) {
+        final rotatedPos = Vector2(
+          conn.relativePosition.x * cos(deltaAngle) - conn.relativePosition.y * sin(deltaAngle),
+          conn.relativePosition.x * sin(deltaAngle) + conn.relativePosition.y * cos(deltaAngle),
+        );
+        transformedConnectors.add(Connector(
+          relativePosition: rotatedPos + deltaPos,
+          relativeAngle: conn.relativeAngle + deltaAngle,
+          type: conn.type,
+        ));
+      }
+      
+      combinedParts.add(PolygonPart(
+        vertices: transformedVertices,
+        connectors: transformedConnectors,
+      ));
+    }
+    
+    // Calculate combined velocity (momentum conservation)
+    final massA = bodyA.body.mass;
+    final massB = bodyB.body.mass;
+    final totalMass = massA + massB;
+    
+    final velA = bodyA.body.linearVelocity;
+    final velB = bodyB.body.linearVelocity;
+    final combinedVel = (velA * massA + velB * massB) / totalMass;
+    
+    final angVelA = bodyA.body.angularVelocity;
+    final angVelB = bodyB.body.angularVelocity;
+    final combinedAngVel = (angVelA * massA + angVelB * massB) / totalMass;
+    
+    // Create new combined body
+    final newBody = SelfAssemblyBody(
+      parts: combinedParts,
+      initialPosition: posA,
+      initialLinearVelocity: combinedVel,
+      initialAngularVelocity: combinedAngVel,
+    );
+    
+    // Remove old bodies and add new one
+    game.entityManager.removeBody(bodyA);
+    game.entityManager.removeBody(bodyB);
+    game.entityManager.addBody(newBody);
   }
 
   double _normalizeAngle(double angle) {
