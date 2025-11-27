@@ -8,18 +8,21 @@ import '../components/connector.dart';
 import '../components/polygon_part.dart';
 
 /// Cached connector data to avoid repeated trigonometric calculations
+/// Uses primitive fields instead of Vector2 to minimize allocations
 class _CachedConnectorData {
   final Connector connector;
   final PolygonPart part;
   final SelfAssemblyBody body;
-  final Vector2 worldPosition;
+  final double worldX;
+  final double worldY;
   final double worldAngle;
 
   _CachedConnectorData({
     required this.connector,
     required this.part,
     required this.body,
-    required this.worldPosition,
+    required this.worldX,
+    required this.worldY,
     required this.worldAngle,
   });
 }
@@ -36,6 +39,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
   final Vector2 _tempVector = Vector2.zero();
   final Vector2 _forceDir = Vector2.zero();
   final Vector2 _force = Vector2.zero();
+  final Vector2 _posA = Vector2.zero();
+  final Vector2 _posB = Vector2.zero();
 
   // Cached connector data for current frame
   final List<_CachedConnectorData> _cachedConnectors = [];
@@ -83,7 +88,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
             connector: conn,
             part: part,
             body: body,
-            worldPosition: Vector2(worldX, worldY),
+            worldX: worldX,
+            worldY: worldY,
             worldAngle: angle + conn.relativeAngle,
           ));
         }
@@ -115,7 +121,11 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
 
   /// Process a single connector pair
   void _processConnectorPair(_CachedConnectorData dataA, _CachedConnectorData dataB) {
-    _getShortestVector(dataA.worldPosition, dataB.worldPosition, _tempVector);
+    // Use reusable vectors for positions
+    _posA.setValues(dataA.worldX, dataA.worldY);
+    _posB.setValues(dataB.worldX, dataB.worldY);
+    
+    _getShortestVectorFromXY(dataA.worldX, dataA.worldY, dataB.worldX, dataB.worldY, _tempVector);
     final dist = _tempVector.length;
 
     final sameType = dataA.connector.type == dataB.connector.type;
@@ -127,8 +137,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
       _force.setFrom(_forceDir);
       _force.scale(repulsionForce * (1.0 - dist / repulsionRange));
 
-      dataA.body.body.applyForce(-_force, point: dataA.worldPosition);
-      dataB.body.body.applyForce(_force, point: dataB.worldPosition);
+      dataA.body.body.applyForce(-_force, point: _posA);
+      dataB.body.body.applyForce(_force, point: _posB);
     } else if (!sameType && dist < connectionThreshold) {
       // Check angle alignment
       final angleDiff = _normalizeAngle(dataA.worldAngle - dataB.worldAngle);
@@ -143,8 +153,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
       _force.setFrom(_forceDir);
       _force.scale(attractionForce * (1.0 - dist / attractionRange));
 
-      dataA.body.body.applyForce(_force, point: dataA.worldPosition);
-      dataB.body.body.applyForce(-_force, point: dataB.worldPosition);
+      dataA.body.body.applyForce(_force, point: _posA);
+      dataB.body.body.applyForce(-_force, point: _posB);
     }
   }
 
@@ -247,14 +257,14 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
   }
 
   /// Calculate the shortest vector between two points, considering periodic boundary
-  /// Uses the provided output vector to avoid allocations
-  void _getShortestVector(Vector2 from, Vector2 to, Vector2 output) {
+  /// Uses x/y coordinates directly to avoid Vector2 allocations
+  void _getShortestVectorFromXY(double fromX, double fromY, double toX, double toY, Vector2 output) {
     final worldSize = game.worldSize;
     final halfX = worldSize.x * 0.5;
     final halfY = worldSize.y * 0.5;
     
-    var dx = to.x - from.x;
-    var dy = to.y - from.y;
+    var dx = toX - fromX;
+    var dy = toY - fromY;
 
     if (dx > halfX) dx -= worldSize.x;
     else if (dx < -halfX) dx += worldSize.x;
