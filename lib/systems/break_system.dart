@@ -3,8 +3,9 @@ import 'package:flame/components.dart';
 import '../game/self_assembly_game.dart';
 import '../components/body_component.dart';
 import '../components/polygon_part.dart';
+import '../interfaces/interfaces.dart';
 
-class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> {
+class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> implements IBreakSystem {
   final double breakProbabilityPerSecond = 0.1; // 10% chance per second
   final Random _rng = Random();
 
@@ -28,12 +29,13 @@ class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> {
     }
   }
 
-  void _breakBody(SelfAssemblyBody body) {
+  void _breakBody(IAssemblyBody body) {
     // Split body into individual parts
-    final position = body.body.position;
-    final angle = body.body.angle;
-    final velocity = body.body.linearVelocity;
-    final angularVelocity = body.body.angularVelocity;
+    final physicsBody = body.physicsBody;
+    final position = physicsBody.position;
+    final angle = physicsBody.angle;
+    final velocity = physicsBody.linearVelocity;
+    final angularVelocity = physicsBody.angularVelocity;
 
     // Create a new body for each part
     for (var i = 0; i < body.parts.length; i++) {

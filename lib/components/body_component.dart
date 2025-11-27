@@ -2,12 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'polygon_part.dart';
 import 'connector.dart';
+import '../interfaces/interfaces.dart';
 
-class SelfAssemblyBody extends BodyComponent {
+/// Forge2D Bodyをラップしてインターフェースを実装
+class Forge2DPhysicsBody implements IPhysicsBody {
+  final Body _body;
+  
+  Forge2DPhysicsBody(this._body);
+  
+  @override
+  Vector2 get position => _body.position;
+  
+  @override
+  double get angle => _body.angle;
+  
+  @override
+  Vector2 get linearVelocity => _body.linearVelocity;
+  
+  @override
+  double get angularVelocity => _body.angularVelocity;
+  
+  @override
+  double get mass => _body.mass;
+  
+  @override
+  void applyForce(Vector2 force, {Vector2? point}) {
+    _body.applyForce(force, point: point);
+  }
+  
+  @override
+  void setTransform(Vector2 position, double angle) {
+    _body.setTransform(position, angle);
+  }
+}
+
+class SelfAssemblyBody extends BodyComponent implements IAssemblyBody {
+  @override
   final List<PolygonPart> parts;
   final Vector2 initialPosition;
   final Vector2 initialLinearVelocity;
   final double initialAngularVelocity;
+  
+  Forge2DPhysicsBody? _physicsBody;
 
   SelfAssemblyBody({
     required this.parts,
@@ -16,6 +52,12 @@ class SelfAssemblyBody extends BodyComponent {
     double? initialAngularVelocity,
   })  : initialLinearVelocity = initialLinearVelocity ?? Vector2.zero(),
         initialAngularVelocity = initialAngularVelocity ?? 0.0;
+  
+  @override
+  IPhysicsBody get physicsBody {
+    _physicsBody ??= Forge2DPhysicsBody(body);
+    return _physicsBody!;
+  }
 
   @override
   Body createBody() {

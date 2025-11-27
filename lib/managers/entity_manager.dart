@@ -1,13 +1,15 @@
 import 'package:flame/components.dart';
 import '../game/self_assembly_game.dart';
 import '../components/body_component.dart';
+import '../interfaces/interfaces.dart';
 
-class EntityManager extends Component with HasGameReference<SelfAssemblyGame> {
+class EntityManager extends Component with HasGameReference<SelfAssemblyGame> implements IEntityManager {
   final List<SelfAssemblyBody> _bodies = [];
   final List<SelfAssemblyBody> _bodiesToAdd = [];
   final List<SelfAssemblyBody> _bodiesToRemove = [];
 
-  List<SelfAssemblyBody> get bodies => List.unmodifiable(_bodies);
+  @override
+  List<IAssemblyBody> get bodies => List<IAssemblyBody>.unmodifiable(_bodies);
 
   @override
   Future<void> onLoad() async {
@@ -32,11 +34,13 @@ class EntityManager extends Component with HasGameReference<SelfAssemblyGame> {
     _bodiesToAdd.clear();
   }
 
-  void addBody(SelfAssemblyBody body) {
-    _bodiesToAdd.add(body);
+  @override
+  void addBody(IAssemblyBody body) {
+    _bodiesToAdd.add(body as SelfAssemblyBody);
   }
 
-  void removeBody(SelfAssemblyBody body) {
-    _bodiesToRemove.add(body);
+  @override
+  void removeBody(IAssemblyBody body) {
+    _bodiesToRemove.add(body as SelfAssemblyBody);
   }
 }

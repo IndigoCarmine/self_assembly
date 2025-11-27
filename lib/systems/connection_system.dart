@@ -6,8 +6,9 @@ import '../game/self_assembly_game.dart';
 import '../components/body_component.dart';
 import '../components/connector.dart';
 import '../components/polygon_part.dart';
+import '../interfaces/interfaces.dart';
 
-class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame> {
+class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame> implements IConnectionSystem {
   final double attractionRange = 5.0;
   final double attractionForce = 10.0;
   final double repulsionRange = 3.0;
@@ -34,11 +35,13 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     }
   }
 
-  void _checkConnectors(SelfAssemblyBody bodyA, SelfAssemblyBody bodyB) {
-    final posA = bodyA.body.position;
-    final angleA = bodyA.body.angle;
-    final posB = bodyB.body.position;
-    final angleB = bodyB.body.angle;
+  void _checkConnectors(IAssemblyBody bodyA, IAssemblyBody bodyB) {
+    final physicsA = bodyA.physicsBody;
+    final physicsB = bodyB.physicsBody;
+    final posA = physicsA.position;
+    final angleA = physicsA.angle;
+    final posB = physicsB.position;
+    final angleB = physicsB.angle;
 
     for (final partA in bodyA.parts) {
       for (final connA in partA.connectors) {
@@ -72,8 +75,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
               final forceDir = distVec.normalized();
               final force = forceDir * repulsionForce * (1.0 - dist / repulsionRange);
               
-              bodyA.body.applyForce(-force, point: connAPos); // Push away
-              bodyB.body.applyForce(force, point: connBPos);
+              physicsA.applyForce(-force, point: connAPos); // Push away
+              physicsB.applyForce(force, point: connBPos);
             } else if (!sameType && dist < connectionThreshold) {
               // Check angle alignment
               final angleDiff = _normalizeAngle(connAAngle - connBAngle);
@@ -87,8 +90,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
               final forceDir = distVec.normalized();
               final force = forceDir * attractionForce * (1.0 - dist / attractionRange);
 
-              bodyA.body.applyForce(force, point: connAPos);
-              bodyB.body.applyForce(-force, point: connBPos);
+              physicsA.applyForce(force, point: connAPos);
+              physicsB.applyForce(-force, point: connBPos);
             }
           }
         }
@@ -97,15 +100,17 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
   }
 
   void _connectBodies(
-    SelfAssemblyBody bodyA,
-    SelfAssemblyBody bodyB,
+    IAssemblyBody bodyA,
+    IAssemblyBody bodyB,
     Connector connA,
     Connector connB,
   ) {
-    final posA = bodyA.body.position;
-    final angleA = bodyA.body.angle;
-    final posB = bodyB.body.position;
-    final angleB = bodyB.body.angle;
+    final physicsA = bodyA.physicsBody;
+    final physicsB = bodyB.physicsBody;
+    final posA = physicsA.position;
+    final angleA = physicsA.angle;
+    final posB = physicsB.position;
+    final angleB = physicsB.angle;
 
     final combinedParts = <PolygonPart>[];
     
@@ -162,16 +167,16 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     }
     
     // Calculate combined velocity
-    final massA = bodyA.body.mass;
-    final massB = bodyB.body.mass;
+    final massA = physicsA.mass;
+    final massB = physicsB.mass;
     final totalMass = massA + massB;
     
-    final velA = bodyA.body.linearVelocity;
-    final velB = bodyB.body.linearVelocity;
+    final velA = physicsA.linearVelocity;
+    final velB = physicsB.linearVelocity;
     final combinedVel = (velA * massA + velB * massB) / totalMass;
     
-    final angVelA = bodyA.body.angularVelocity;
-    final angVelB = bodyB.body.angularVelocity;
+    final angVelA = physicsA.angularVelocity;
+    final angVelB = physicsB.angularVelocity;
     final combinedAngVel = (angVelA * massA + angVelB * massB) / totalMass;
     
     final newBody = SelfAssemblyBody(
