@@ -5,6 +5,9 @@ import '../managers/entity_manager.dart';
 class PeriodicBoundarySystem extends Component with HasGameReference<SelfAssemblyGame> {
   final Vector2 worldSize;
   late final Vector2 _halfWorldSize;
+  
+  // Reusable vector to reduce allocations
+  final Vector2 _wrappedPosition = Vector2.zero();
 
   PeriodicBoundarySystem({required this.worldSize}) {
     _halfWorldSize = worldSize / 2;
@@ -27,7 +30,8 @@ class PeriodicBoundarySystem extends Component with HasGameReference<SelfAssembl
       final y = ((position.y + _halfWorldSize.y) % worldSize.y + worldSize.y) % worldSize.y - _halfWorldSize.y;
 
       if ((x - position.x).abs() > 0.001 || (y - position.y).abs() > 0.001) {
-        body.setTransform(Vector2(x, y), body.angle);
+        _wrappedPosition.setValues(x, y);
+        body.setTransform(_wrappedPosition, body.angle);
       }
     }
   }

@@ -8,6 +8,26 @@ class SelfAssemblyBody extends BodyComponent {
   final Vector2 initialPosition;
   final Vector2 initialLinearVelocity;
   final double initialAngularVelocity;
+  
+  // Reusable paint objects to reduce allocations
+  static final Paint _fillPaint = Paint()..style = PaintingStyle.fill;
+  static final Paint _strokePaint = Paint()
+    ..color = Colors.black
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 0.1;
+  static final Paint _connectorPlusPaint = Paint()
+    ..color = Colors.red
+    ..strokeWidth = 0.2
+    ..style = PaintingStyle.stroke;
+  static final Paint _connectorMinusPaint = Paint()
+    ..color = Colors.blue
+    ..strokeWidth = 0.2
+    ..style = PaintingStyle.stroke;
+  
+  // Arrow head offset constants
+  static const Offset _arrowEnd = Offset(1.0, 0);
+  static const Offset _arrowHead1 = Offset(0.7, 0.3);
+  static const Offset _arrowHead2 = Offset(0.7, -0.3);
 
   SelfAssemblyBody({
     required this.parts,
@@ -59,9 +79,7 @@ class SelfAssemblyBody extends BodyComponent {
 
     // Draw polygon parts with their colors
     for (final part in parts) {
-      final paint = Paint()
-        ..color = part.color
-        ..style = PaintingStyle.fill;
+      _fillPaint.color = part.color;
       
       final path = Path();
       if (part.vertices.isNotEmpty) {
@@ -71,39 +89,32 @@ class SelfAssemblyBody extends BodyComponent {
         }
         path.close();
       }
-      canvas.drawPath(path, paint);
+      canvas.drawPath(path, _fillPaint);
       
       // Draw outline
-      paint
-        ..color = Colors.black
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.1;
-      canvas.drawPath(path, paint);
+      canvas.drawPath(path, _strokePaint);
     }
 
     // Draw connectors
-    final connectorPaint = Paint()
-      ..strokeWidth = 0.2
-      ..style = PaintingStyle.stroke;
-
     for (final part in parts) {
       for (final connector in part.connectors) {
         final cPos = connector.relativePosition;
         final cAng = connector.relativeAngle;
         
-        // Draw arrow
-        connectorPaint.color = connector.type == ConnectorType.plus ? Colors.red : Colors.blue;
+        // Select paint based on connector type
+        final paint = connector.type == ConnectorType.plus 
+            ? _connectorPlusPaint 
+            : _connectorMinusPaint;
         
         canvas.save();
         canvas.translate(cPos.x, cPos.y);
         canvas.rotate(cAng);
         
         // Draw an arrow pointing in the direction of the connector
-        const arrowLen = 1.0;
-        canvas.drawLine(Offset.zero, const Offset(arrowLen, 0), connectorPaint);
+        canvas.drawLine(Offset.zero, _arrowEnd, paint);
         // Arrow head
-        canvas.drawLine(const Offset(arrowLen, 0), const Offset(arrowLen - 0.3, 0.3), connectorPaint);
-        canvas.drawLine(const Offset(arrowLen, 0), const Offset(arrowLen - 0.3, -0.3), connectorPaint);
+        canvas.drawLine(_arrowEnd, _arrowHead1, paint);
+        canvas.drawLine(_arrowEnd, _arrowHead2, paint);
         
         canvas.restore();
       }
