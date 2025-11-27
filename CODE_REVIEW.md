@@ -4,6 +4,28 @@
 
 このドキュメントでは、self_assembly プロジェクトのコードベースを SOLID 原則に照らし合わせてレビューし、改善点を提案します。
 
+## 📁 インターフェース定義
+
+**並行開発を可能にするためのインターフェース定義は `lib/interfaces/interfaces.dart` に配置されています。**
+
+このファイルには以下のインターフェースが定義されています：
+
+| インターフェース | 説明 | 実装予定クラス |
+|---|---|---|
+| `IEntityManager` | エンティティ管理 | `EntityManager` |
+| `IAssemblyBody` | 自己組織化ボディ | `SelfAssemblyBody` |
+| `IPhysicsBody` | 物理ボディのラッパー | Forge2D Body adapter |
+| `IConnectionSystem` | 接続システム | `ConnectionSystem` |
+| `IBreakSystem` | 分離システム | `BreakSystem` |
+| `IPeriodicBoundarySystem` | 周期境界システム | `PeriodicBoundarySystem` |
+| `IForceModel` | 力計算モデル | `LinearForceModel`, `InverseSquareForceModel` |
+| `IConnectorCompatibility` | コネクタ互換性判定 | `PlusMinusCompatibility` |
+| `IDistanceCalculator` | 距離計算（周期境界対応） | `PeriodicDistanceCalculator` |
+| `IBodyMerger` | ボディ結合 | 未実装 |
+| `IBodySplitter` | ボディ分割 | 未実装 |
+| `IEntityFactory` | エンティティ生成 | 未実装 |
+| `IBodyRenderer` | レンダリング | 未実装 |
+
 ---
 
 ## 1. S - 単一責任の原則 (Single Responsibility Principle)
