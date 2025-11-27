@@ -7,6 +7,23 @@ import '../components/body_component.dart';
 import '../components/connector.dart';
 import '../components/polygon_part.dart';
 
+/// Cached connector data to avoid repeated trigonometric calculations
+class _CachedConnectorData {
+  final Connector connector;
+  final PolygonPart part;
+  final SelfAssemblyBody body;
+  final Vector2 worldPosition;
+  final double worldAngle;
+
+  _CachedConnectorData({
+    required this.connector,
+    required this.part,
+    required this.body,
+    required this.worldPosition,
+    required this.worldAngle,
+  });
+}
+
 class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame> {
   final double attractionRange = 5.0;
   final double attractionForce = 10.0;
@@ -15,6 +32,14 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
   final double connectionThreshold = 0.5;
   final double angleThreshold = 0.3;
 
+  // Reusable vectors to reduce allocations
+  final Vector2 _tempVector = Vector2.zero();
+  final Vector2 _forceDir = Vector2.zero();
+  final Vector2 _force = Vector2.zero();
+
+  // Cached connector data for current frame
+  final List<_CachedConnectorData> _cachedConnectors = [];
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -22,77 +47,104 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     final bodies = game.entityManager.bodies;
     if (bodies.isEmpty) return;
 
-    for (var i = 0; i < bodies.length; i++) {
-      for (var j = i + 1; j < bodies.length; j++) {
-        final bodyA = bodies[i];
-        final bodyB = bodies[j];
+    // Build cache of all connector world positions and angles
+    _buildConnectorCache(bodies);
 
-        if (!bodyA.isMounted || !bodyB.isMounted) continue;
-        
-        _checkConnectors(bodyA, bodyB);
+    // Process connector pairs using cached data
+    _processConnectorPairs();
+  }
+
+  /// Build cache of connector world positions to avoid repeated trig calculations
+  void _buildConnectorCache(List<SelfAssemblyBody> bodies) {
+    _cachedConnectors.clear();
+
+    for (final body in bodies) {
+      if (!body.isMounted) continue;
+
+      final pos = body.body.position;
+      final angle = body.body.angle;
+      
+      // Pre-compute sin and cos once per body
+      final cosAngle = cos(angle);
+      final sinAngle = sin(angle);
+
+      for (final part in body.parts) {
+        for (final conn in part.connectors) {
+          // Skip already connected connectors
+          if (conn.isConnected) continue;
+
+          // Calculate world position using cached trig values
+          final relX = conn.relativePosition.x;
+          final relY = conn.relativePosition.y;
+          final worldX = pos.x + relX * cosAngle - relY * sinAngle;
+          final worldY = pos.y + relX * sinAngle + relY * cosAngle;
+
+          _cachedConnectors.add(_CachedConnectorData(
+            connector: conn,
+            part: part,
+            body: body,
+            worldPosition: Vector2(worldX, worldY),
+            worldAngle: angle + conn.relativeAngle,
+          ));
+        }
       }
     }
   }
 
-  void _checkConnectors(SelfAssemblyBody bodyA, SelfAssemblyBody bodyB) {
-    final posA = bodyA.body.position;
-    final angleA = bodyA.body.angle;
-    final posB = bodyB.body.position;
-    final angleB = bodyB.body.angle;
+  /// Process all connector pairs using cached data
+  void _processConnectorPairs() {
+    final count = _cachedConnectors.length;
 
-    for (final partA in bodyA.parts) {
-      for (final connA in partA.connectors) {
-        final rotatedA = Vector2(
-          connA.relativePosition.x * cos(angleA) - connA.relativePosition.y * sin(angleA),
-          connA.relativePosition.x * sin(angleA) + connA.relativePosition.y * cos(angleA),
-        );
-        final connAPos = posA + rotatedA;
-        final connAAngle = angleA + connA.relativeAngle;
+    for (var i = 0; i < count; i++) {
+      final dataA = _cachedConnectors[i];
+      
+      // Skip if connector was connected during this frame
+      if (dataA.connector.isConnected) continue;
 
-        for (final partB in bodyB.parts) {
-          for (final connB in partB.connectors) {
-            // Skip if either connector is already connected
-            if (connA.isConnected || connB.isConnected) continue;
+      for (var j = i + 1; j < count; j++) {
+        final dataB = _cachedConnectors[j];
+        
+        // Skip if same body or connector already connected
+        if (dataA.body == dataB.body) continue;
+        if (dataB.connector.isConnected) continue;
 
-            final rotatedB = Vector2(
-              connB.relativePosition.x * cos(angleB) - connB.relativePosition.y * sin(angleB),
-              connB.relativePosition.x * sin(angleB) + connB.relativePosition.y * cos(angleB),
-            );
-            final connBPos = posB + rotatedB;
-            final connBAngle = angleB + connB.relativeAngle;
-
-            final distVec = _getShortestVector(connAPos, connBPos);
-            final dist = distVec.length;
-
-            // Check if same type (repulsion) or different type (attraction)
-            final sameType = connA.type == connB.type;
-            
-            if (sameType && dist < repulsionRange) {
-              // Apply repulsion force
-              final forceDir = distVec.normalized();
-              final force = forceDir * repulsionForce * (1.0 - dist / repulsionRange);
-              
-              bodyA.body.applyForce(-force, point: connAPos); // Push away
-              bodyB.body.applyForce(force, point: connBPos);
-            } else if (!sameType && dist < connectionThreshold) {
-              // Check angle alignment
-              final angleDiff = _normalizeAngle(connAAngle - connBAngle);
-              if ((angleDiff - pi).abs() < angleThreshold) {
-                print('Connecting! dist=$dist, angleDiff=$angleDiff');
-                _connectBodies(bodyA, bodyB, connA, connB);
-                return;
-              }
-            } else if (!sameType && dist < attractionRange) {
-              // Apply attraction force
-              final forceDir = distVec.normalized();
-              final force = forceDir * attractionForce * (1.0 - dist / attractionRange);
-
-              bodyA.body.applyForce(force, point: connAPos);
-              bodyB.body.applyForce(-force, point: connBPos);
-            }
-          }
-        }
+        _processConnectorPair(dataA, dataB);
       }
+    }
+  }
+
+  /// Process a single connector pair
+  void _processConnectorPair(_CachedConnectorData dataA, _CachedConnectorData dataB) {
+    _getShortestVector(dataA.worldPosition, dataB.worldPosition, _tempVector);
+    final dist = _tempVector.length;
+
+    final sameType = dataA.connector.type == dataB.connector.type;
+
+    if (sameType && dist < repulsionRange) {
+      // Apply repulsion force
+      _forceDir.setFrom(_tempVector);
+      _forceDir.normalize();
+      _force.setFrom(_forceDir);
+      _force.scale(repulsionForce * (1.0 - dist / repulsionRange));
+
+      dataA.body.body.applyForce(-_force, point: dataA.worldPosition);
+      dataB.body.body.applyForce(_force, point: dataB.worldPosition);
+    } else if (!sameType && dist < connectionThreshold) {
+      // Check angle alignment
+      final angleDiff = _normalizeAngle(dataA.worldAngle - dataB.worldAngle);
+      if ((angleDiff - pi).abs() < angleThreshold) {
+        print('Connecting! dist=$dist, angleDiff=$angleDiff');
+        _connectBodies(dataA.body, dataB.body, dataA.connector, dataB.connector);
+      }
+    } else if (!sameType && dist < attractionRange) {
+      // Apply attraction force
+      _forceDir.setFrom(_tempVector);
+      _forceDir.normalize();
+      _force.setFrom(_forceDir);
+      _force.scale(attractionForce * (1.0 - dist / attractionRange));
+
+      dataA.body.body.applyForce(_force, point: dataA.worldPosition);
+      dataB.body.body.applyForce(-_force, point: dataB.worldPosition);
     }
   }
 
@@ -131,24 +183,26 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     final deltaPos = posB - posA;
     final deltaAngle = angleB - angleA;
     
+    // Pre-compute sin and cos for the delta angle
+    final cosDelta = cos(deltaAngle);
+    final sinDelta = sin(deltaAngle);
+    
     for (final partB in bodyB.parts) {
       final transformedVertices = <Vector2>[];
       for (final v in partB.vertices) {
-        final rotated = Vector2(
-          v.x * cos(deltaAngle) - v.y * sin(deltaAngle),
-          v.x * sin(deltaAngle) + v.y * cos(deltaAngle),
-        );
-        transformedVertices.add(rotated + deltaPos);
+        final rotatedX = v.x * cosDelta - v.y * sinDelta;
+        final rotatedY = v.x * sinDelta + v.y * cosDelta;
+        transformedVertices.add(Vector2(rotatedX + deltaPos.x, rotatedY + deltaPos.y));
       }
       
       final transformedConnectors = <Connector>[];
       for (final conn in partB.connectors) {
-        final rotatedPos = Vector2(
-          conn.relativePosition.x * cos(deltaAngle) - conn.relativePosition.y * sin(deltaAngle),
-          conn.relativePosition.x * sin(deltaAngle) + conn.relativePosition.y * cos(deltaAngle),
-        );
+        final relX = conn.relativePosition.x;
+        final relY = conn.relativePosition.y;
+        final rotatedX = relX * cosDelta - relY * sinDelta;
+        final rotatedY = relX * sinDelta + relY * cosDelta;
         transformedConnectors.add(Connector(
-          relativePosition: rotatedPos + deltaPos,
+          relativePosition: Vector2(rotatedX + deltaPos.x, rotatedY + deltaPos.y),
           relativeAngle: conn.relativeAngle + deltaAngle,
           type: conn.type,
         ));
@@ -192,19 +246,22 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     return angle;
   }
 
-  Vector2 _getShortestVector(Vector2 from, Vector2 to) {
+  /// Calculate the shortest vector between two points, considering periodic boundary
+  /// Uses the provided output vector to avoid allocations
+  void _getShortestVector(Vector2 from, Vector2 to, Vector2 output) {
     final worldSize = game.worldSize;
-    final halfWorldSize = worldSize / 2;
+    final halfX = worldSize.x * 0.5;
+    final halfY = worldSize.y * 0.5;
     
     var dx = to.x - from.x;
     var dy = to.y - from.y;
 
-    if (dx > halfWorldSize.x) dx -= worldSize.x;
-    else if (dx < -halfWorldSize.x) dx += worldSize.x;
+    if (dx > halfX) dx -= worldSize.x;
+    else if (dx < -halfX) dx += worldSize.x;
 
-    if (dy > halfWorldSize.y) dy -= worldSize.y;
-    else if (dy < -halfWorldSize.y) dy += worldSize.y;
+    if (dy > halfY) dy -= worldSize.y;
+    else if (dy < -halfY) dy += worldSize.y;
 
-    return Vector2(dx, dy);
+    output.setValues(dx, dy);
   }
 }

@@ -7,6 +7,9 @@ import '../components/polygon_part.dart';
 class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> {
   final double breakProbabilityPerSecond = 0.1; // 10% chance per second
   final Random _rng = Random();
+  
+  // Reusable vector to reduce allocations
+  final Vector2 _separationVel = Vector2.zero();
 
   @override
   void update(double dt) {
@@ -39,17 +42,21 @@ class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> {
     for (var i = 0; i < body.parts.length; i++) {
       final part = body.parts[i];
       
-      // Calculate separation velocity based on connector direction
-      var separationVel = Vector2.zero();
+      // Reset separation velocity
+      _separationVel.setZero();
       
       for (final conn in part.connectors) {
         if (conn.isConnected) {
           // Calculate connector's absolute angle
           final connAngle = angle + conn.relativeAngle;
           
+          // Pre-compute sin and cos
+          final cosAngle = cos(connAngle);
+          final sinAngle = sin(connAngle);
+          
           // Apply force in connector direction (push away)
-          final forceDir = Vector2(cos(connAngle), sin(connAngle));
-          separationVel += forceDir * 3.0; // Separation force magnitude
+          _separationVel.x += cosAngle * 3.0; // Separation force magnitude
+          _separationVel.y += sinAngle * 3.0;
           
           // Mark as disconnected
           conn.isConnected = false;
@@ -57,15 +64,13 @@ class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> {
       }
       
       // Add some random component
-      separationVel += Vector2(
-        (_rng.nextDouble() - 0.5) * 1.0,
-        (_rng.nextDouble() - 0.5) * 1.0,
-      );
+      _separationVel.x += (_rng.nextDouble() - 0.5) * 1.0;
+      _separationVel.y += (_rng.nextDouble() - 0.5) * 1.0;
       
       final newBody = SelfAssemblyBody(
         parts: [part],
         initialPosition: position.clone(),
-        initialLinearVelocity: velocity + separationVel,
+        initialLinearVelocity: velocity + _separationVel,
         initialAngularVelocity: angularVelocity + (_rng.nextDouble() - 0.5) * 1.0,
       );
       
