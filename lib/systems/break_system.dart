@@ -23,13 +23,13 @@ class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> impl
         // Check probability
         final breakChance = breakProbabilityPerSecond * dt;
         if (_rng.nextDouble() < breakChance) {
-          _breakBody(body as SelfAssemblyBody);
+          _breakBody(body);
         }
       }
     }
   }
 
-  void _breakBody(SelfAssemblyBody body) {
+  void _breakBody(IAssemblyBody body) {
     // Split body into individual parts
     final physicsBody = body.physicsBody;
     final position = physicsBody.position;

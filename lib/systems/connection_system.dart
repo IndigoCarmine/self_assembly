@@ -30,12 +30,12 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
 
         if (!bodyA.isMounted || !bodyB.isMounted) continue;
         
-        _checkConnectors(bodyA as SelfAssemblyBody, bodyB as SelfAssemblyBody);
+        _checkConnectors(bodyA, bodyB);
       }
     }
   }
 
-  void _checkConnectors(SelfAssemblyBody bodyA, SelfAssemblyBody bodyB) {
+  void _checkConnectors(IAssemblyBody bodyA, IAssemblyBody bodyB) {
     final physicsA = bodyA.physicsBody;
     final physicsB = bodyB.physicsBody;
     final posA = physicsA.position;
@@ -100,8 +100,8 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
   }
 
   void _connectBodies(
-    SelfAssemblyBody bodyA,
-    SelfAssemblyBody bodyB,
+    IAssemblyBody bodyA,
+    IAssemblyBody bodyB,
     Connector connA,
     Connector connB,
   ) {
