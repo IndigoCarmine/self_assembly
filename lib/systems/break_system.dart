@@ -39,19 +39,32 @@ class BreakSystem extends Component with HasGameReference<SelfAssemblyGame> {
     for (var i = 0; i < body.parts.length; i++) {
       final part = body.parts[i];
       
-      // Calculate absolute position for this part
-      // (parts are in body-local coordinates)
-      final partPos = position.clone();
+      // Calculate separation velocity based on connector direction
+      var separationVel = Vector2.zero();
       
-      // Add some random separation velocity to prevent immediate reconnection
-      final separationVel = Vector2(
-        (_rng.nextDouble() - 0.5) * 2.0,
-        (_rng.nextDouble() - 0.5) * 2.0,
+      for (final conn in part.connectors) {
+        if (conn.isConnected) {
+          // Calculate connector's absolute angle
+          final connAngle = angle + conn.relativeAngle;
+          
+          // Apply force in connector direction (push away)
+          final forceDir = Vector2(cos(connAngle), sin(connAngle));
+          separationVel += forceDir * 3.0; // Separation force magnitude
+          
+          // Mark as disconnected
+          conn.isConnected = false;
+        }
+      }
+      
+      // Add some random component
+      separationVel += Vector2(
+        (_rng.nextDouble() - 0.5) * 1.0,
+        (_rng.nextDouble() - 0.5) * 1.0,
       );
       
       final newBody = SelfAssemblyBody(
         parts: [part],
-        initialPosition: partPos,
+        initialPosition: position.clone(),
         initialLinearVelocity: velocity + separationVel,
         initialAngularVelocity: angularVelocity + (_rng.nextDouble() - 0.5) * 1.0,
       );

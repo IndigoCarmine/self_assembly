@@ -8,7 +8,9 @@ import '../components/polygon_part.dart';
 
 class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame> {
   final double attractionRange = 5.0;
-  final double attractionForce = 100.0;
+  final double attractionForce = 10.0; // Reduced from 100.0
+  final double repulsionRange = 3.0;
+  final double repulsionForce = 15.0;
   final double connectionThreshold = 0.5;
   final double angleThreshold = 0.3;
 
@@ -42,31 +44,6 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
         final rotatedA = Vector2(
           connA.relativePosition.x * cos(angleA) - connA.relativePosition.y * sin(angleA),
           connA.relativePosition.x * sin(angleA) + connA.relativePosition.y * cos(angleA),
-        );
-        final connAPos = posA + rotatedA;
-        final connAAngle = angleA + connA.relativeAngle;
-
-        for (final partB in bodyB.parts) {
-          for (final connB in partB.connectors) {
-            if (!_areCompatible(connA, connB)) continue;
-
-            final rotatedB = Vector2(
-              connB.relativePosition.x * cos(angleB) - connB.relativePosition.y * sin(angleB),
-              connB.relativePosition.x * sin(angleB) + connB.relativePosition.y * cos(angleB),
-            );
-            final connBPos = posB + rotatedB;
-            final connBAngle = angleB + connB.relativeAngle;
-
-            final distVec = _getShortestVector(connAPos, connBPos);
-            final dist = distVec.length;
-
-            if (dist < connectionThreshold) {
-              final angleDiff = _normalizeAngle(connAAngle - connBAngle);
-              if ((angleDiff - pi).abs() < angleThreshold) {
-                // Trigger connection - merge bodies
-                _connectBodies(bodyA, bodyB, connA, connB, connAPos, connBPos);
-                return;
-              }
             } else if (dist < attractionRange) {
               final forceDir = distVec.normalized();
               final force = forceDir * attractionForce * (1.0 - dist / attractionRange);
@@ -102,7 +79,23 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     // Combined parts from both bodies
     final combinedParts = <PolygonPart>[];
     
-    // Add parts from bodyA (no transformation needed)
+    // Mark the connecting connectors as connected
+    connA.isConnected = true;
+    connB.isConnected = true;
+    
+    // Generate a new color for the merged body
+    final random = Random();
+    final newColor = Color.fromARGB(
+      255,
+      100 + random.nextInt(156), // 100-255
+      100 + random.nextInt(156),
+      100 + random.nextInt(156),
+    );
+    
+    // Add parts from bodyA (update color)
+    for (final part in bodyA.parts) {
+      part.color = newColor;
+    }
     combinedParts.addAll(bodyA.parts);
     
     // Add parts from bodyB with transformation
@@ -139,6 +132,7 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
       combinedParts.add(PolygonPart(
         vertices: transformedVertices,
         connectors: transformedConnectors,
+        color: newColor,
       ));
     }
     

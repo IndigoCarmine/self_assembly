@@ -16,10 +16,7 @@ class Connector {
   final double relativeAngle;
   final ConnectorType type;
   ConnectorState state = ConnectorState.idle;
-  
-  // ID of the connected connector (if any)
-  // In a real implementation, we might want a direct reference or a weak reference,
-  // but for now, we'll just track state.
+  bool isConnected = false; // Track if this connector is connected
   
   Connector({
     required this.relativePosition,

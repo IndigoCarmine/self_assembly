@@ -32,31 +32,40 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
     entityManager = EntityManager();
     await add(entityManager);
 
-    // Test: Add multiple simple triangle bodies with one connector
+    // Test: Add multiple simple triangle bodies with two connectors
     final rng = Random();
     for (var i = 0; i < 20; i++) {
-      final connectorType = rng.nextBool() ? ConnectorType.plus : ConnectorType.minus;
-      
       // Triangle vertices
       final v0 = Vector2(0, -2);
       final v1 = Vector2(2, 2);
       final v2 = Vector2(-2, 2);
       
-      // Calculate edge midpoint and perpendicular angle
-      // Using the top edge (v0 to v1)
-      final edgeMid = (v0 + v1) / 2;
-      final edgeVec = v1 - v0;
-      final edgeAngle = atan2(edgeVec.y, edgeVec.x);
-      final perpAngle = edgeAngle + pi / 2; // Perpendicular (outward)
+      // Calculate edge midpoints and perpendicular angles
+      // Edge 0-1 (top-right)
+      final edge01Mid = (v0 + v1) / 2;
+      final edge01Vec = v1 - v0;
+      final edge01Angle = atan2(edge01Vec.y, edge01Vec.x);
+      final perp01 = edge01Angle + pi / 2;
+      
+      // Edge 1-2 (bottom)
+      final edge12Mid = (v1 + v2) / 2;
+      final edge12Vec = v2 - v1;
+      final edge12Angle = atan2(edge12Vec.y, edge12Vec.x);
+      final perp12 = edge12Angle + pi / 2;
       
       final parts = [
         PolygonPart(
           vertices: [v0, v1, v2],
           connectors: [
             Connector(
-              relativePosition: edgeMid,
-              relativeAngle: perpAngle,
-              type: connectorType,
+              relativePosition: edge01Mid,
+              relativeAngle: perp01,
+              type: ConnectorType.plus,
+            ),
+            Connector(
+              relativePosition: edge12Mid,
+              relativeAngle: perp12,
+              type: ConnectorType.minus,
             ),
           ],
         ),
