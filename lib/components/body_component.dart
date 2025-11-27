@@ -27,11 +27,7 @@ class Forge2DPhysicsBody implements IPhysicsBody {
   
   @override
   void applyForce(Vector2 force, {Vector2? point}) {
-    if (point != null) {
-      _body.applyForce(force, point: point);
-    } else {
-      _body.applyForce(force);
-    }
+    _body.applyForce(force, point: point);
   }
   
   @override
