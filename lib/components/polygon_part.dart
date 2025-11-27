@@ -12,8 +12,8 @@ class PolygonPart {
   PolygonPart({
     required this.vertices,
     required this.connectors,
-    this.relativePosition = const Vector2(0, 0),
+    Vector2? relativePosition,
     this.relativeAngle = 0.0,
     this.color = Colors.white,
-  });
+  }) : relativePosition = relativePosition ?? Vector2.zero();
 }

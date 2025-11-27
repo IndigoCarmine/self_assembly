@@ -4,24 +4,39 @@ import '../components/body_component.dart';
 
 class EntityManager extends Component with HasGameReference<SelfAssemblyGame> {
   final List<SelfAssemblyBody> _bodies = [];
+  final List<SelfAssemblyBody> _bodiesToAdd = [];
+  final List<SelfAssemblyBody> _bodiesToRemove = [];
 
   List<SelfAssemblyBody> get bodies => List.unmodifiable(_bodies);
 
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    // Initial setup if needed
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    
+    // Process pending additions and removals
+    for (final body in _bodiesToRemove) {
+      _bodies.remove(body);
+      body.removeFromParent();
+    }
+    _bodiesToRemove.clear();
+    
+    for (final body in _bodiesToAdd) {
+      _bodies.add(body);
+      game.world.add(body);
+    }
+    _bodiesToAdd.clear();
   }
 
   void addBody(SelfAssemblyBody body) {
-    _bodies.add(body);
-    game.world.add(body);
+    _bodiesToAdd.add(body);
   }
 
   void removeBody(SelfAssemblyBody body) {
-    _bodies.remove(body);
-    game.world.remove(body);
+    _bodiesToRemove.add(body);
   }
-  
-  // Future: Add methods for finding neighbors, etc.
 }

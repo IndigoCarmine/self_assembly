@@ -1,3 +1,5 @@
+このREADMEを含め、すべてのファイルはAntigravityで作成されました。コードに触れていません。どこまでできるか試しています。
+
 # Self Assembly Simulation
 
 自己組織化プロセスのシミュレーション。Flame と Forge2D (Box2D) を使用して実装されています。

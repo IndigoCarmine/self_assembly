@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:flutter/material.dart';
 import '../game/self_assembly_game.dart';
 import '../components/body_component.dart';
 import '../components/connector.dart';
@@ -8,7 +9,7 @@ import '../components/polygon_part.dart';
 
 class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame> {
   final double attractionRange = 5.0;
-  final double attractionForce = 10.0; // Reduced from 100.0
+  final double attractionForce = 10.0;
   final double repulsionRange = 3.0;
   final double repulsionForce = 15.0;
   final double connectionThreshold = 0.5;
@@ -44,7 +45,45 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
         final rotatedA = Vector2(
           connA.relativePosition.x * cos(angleA) - connA.relativePosition.y * sin(angleA),
           connA.relativePosition.x * sin(angleA) + connA.relativePosition.y * cos(angleA),
-            } else if (dist < attractionRange) {
+        );
+        final connAPos = posA + rotatedA;
+        final connAAngle = angleA + connA.relativeAngle;
+
+        for (final partB in bodyB.parts) {
+          for (final connB in partB.connectors) {
+            // Skip if either connector is already connected
+            if (connA.isConnected || connB.isConnected) continue;
+
+            final rotatedB = Vector2(
+              connB.relativePosition.x * cos(angleB) - connB.relativePosition.y * sin(angleB),
+              connB.relativePosition.x * sin(angleB) + connB.relativePosition.y * cos(angleB),
+            );
+            final connBPos = posB + rotatedB;
+            final connBAngle = angleB + connB.relativeAngle;
+
+            final distVec = _getShortestVector(connAPos, connBPos);
+            final dist = distVec.length;
+
+            // Check if same type (repulsion) or different type (attraction)
+            final sameType = connA.type == connB.type;
+            
+            if (sameType && dist < repulsionRange) {
+              // Apply repulsion force
+              final forceDir = distVec.normalized();
+              final force = forceDir * repulsionForce * (1.0 - dist / repulsionRange);
+              
+              bodyA.body.applyForce(-force, point: connAPos); // Push away
+              bodyB.body.applyForce(force, point: connBPos);
+            } else if (!sameType && dist < connectionThreshold) {
+              // Check angle alignment
+              final angleDiff = _normalizeAngle(connAAngle - connBAngle);
+              if ((angleDiff - pi).abs() < angleThreshold) {
+                print('Connecting! dist=$dist, angleDiff=$angleDiff');
+                _connectBodies(bodyA, bodyB, connA, connB);
+                return;
+              }
+            } else if (!sameType && dist < attractionRange) {
+              // Apply attraction force
               final forceDir = distVec.normalized();
               final force = forceDir * attractionForce * (1.0 - dist / attractionRange);
 
@@ -57,57 +96,44 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     }
   }
 
-  bool _areCompatible(Connector a, Connector b) {
-    return (a.type == ConnectorType.plus && b.type == ConnectorType.minus) ||
-           (a.type == ConnectorType.minus && b.type == ConnectorType.plus);
-  }
-
   void _connectBodies(
     SelfAssemblyBody bodyA,
     SelfAssemblyBody bodyB,
     Connector connA,
     Connector connB,
-    Vector2 connAPos,
-    Vector2 connBPos,
   ) {
-    // Calculate the transformation needed to align connB to connA
     final posA = bodyA.body.position;
     final angleA = bodyA.body.angle;
     final posB = bodyB.body.position;
     final angleB = bodyB.body.angle;
 
-    // Combined parts from both bodies
     final combinedParts = <PolygonPart>[];
     
-    // Mark the connecting connectors as connected
     connA.isConnected = true;
     connB.isConnected = true;
     
-    // Generate a new color for the merged body
+    // Generate new color
     final random = Random();
     final newColor = Color.fromARGB(
       255,
-      100 + random.nextInt(156), // 100-255
+      100 + random.nextInt(156),
       100 + random.nextInt(156),
       100 + random.nextInt(156),
     );
     
-    // Add parts from bodyA (update color)
+    // Add parts from bodyA
     for (final part in bodyA.parts) {
       part.color = newColor;
     }
     combinedParts.addAll(bodyA.parts);
     
-    // Add parts from bodyB with transformation
-    // We need to transform bodyB's parts to bodyA's local coordinate system
+    // Transform and add parts from bodyB
     final deltaPos = posB - posA;
     final deltaAngle = angleB - angleA;
     
     for (final partB in bodyB.parts) {
-      // Transform vertices
       final transformedVertices = <Vector2>[];
       for (final v in partB.vertices) {
-        // Rotate by deltaAngle, then translate by deltaPos
         final rotated = Vector2(
           v.x * cos(deltaAngle) - v.y * sin(deltaAngle),
           v.x * sin(deltaAngle) + v.y * cos(deltaAngle),
@@ -115,7 +141,6 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
         transformedVertices.add(rotated + deltaPos);
       }
       
-      // Transform connectors
       final transformedConnectors = <Connector>[];
       for (final conn in partB.connectors) {
         final rotatedPos = Vector2(
@@ -136,7 +161,7 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
       ));
     }
     
-    // Calculate combined velocity (momentum conservation)
+    // Calculate combined velocity
     final massA = bodyA.body.mass;
     final massB = bodyB.body.mass;
     final totalMass = massA + massB;
@@ -149,7 +174,6 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
     final angVelB = bodyB.body.angularVelocity;
     final combinedAngVel = (angVelA * massA + angVelB * massB) / totalMass;
     
-    // Create new combined body
     final newBody = SelfAssemblyBody(
       parts: combinedParts,
       initialPosition: posA,
@@ -157,7 +181,6 @@ class ConnectionSystem extends Component with HasGameReference<SelfAssemblyGame>
       initialAngularVelocity: combinedAngVel,
     );
     
-    // Remove old bodies and add new one
     game.entityManager.removeBody(bodyA);
     game.entityManager.removeBody(bodyB);
     game.entityManager.addBody(newBody);
