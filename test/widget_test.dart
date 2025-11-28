@@ -1,13 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flame/game.dart';
-import 'package:self_assembly/game/self_assembly_game.dart';
+import 'package:self_assembly/main.dart';
 
 void main() {
-  testWidgets('Game widget smoke test', (WidgetTester tester) async {
+  testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const GameWidget.controlled(gameFactory: SelfAssemblyGame.new));
+    await tester.pumpWidget(const SelfAssemblyApp());
 
-    // Verify that the game widget is present.
-    expect(find.byType(GameWidget<SelfAssemblyGame>), findsOneWidget);
+    // Verify that the app is present.
+    expect(find.byType(SelfAssemblyApp), findsOneWidget);
   });
 }

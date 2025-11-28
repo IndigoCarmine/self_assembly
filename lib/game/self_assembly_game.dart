@@ -5,19 +5,29 @@ import '../systems/periodic_boundary_system.dart';
 import '../systems/connection_system.dart';
 import '../systems/break_system.dart';
 import '../systems/flow_system.dart';
+import '../systems/hexamer_detection_system.dart';
 import '../logic/body_merger.dart';
 import '../logic/body_splitter.dart';
 import '../logic/entity_spawner.dart';
 import '../interfaces/interfaces.dart';
 import '../events/event_bus.dart';
 import '../components/body_component.dart';
+import '../state/game_state.dart';
+import '../ui/game_hud.dart';
+
+enum GameScreen { start, playing, result }
 
 class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector, TapCallbacks {
   late final EntityManager entityManager;
   late final EntitySpawner entitySpawner;
+  late final GameState gameState;
   final Vector2 worldSize = Vector2(100, 100);
+  final Function(GameScreen) onScreenChange;
+  
+  GameScreen _currentScreen = GameScreen.start;
+  GameHUD? _gameHUD;
 
-  SelfAssemblyGame() : super(gravity: Vector2.zero(), zoom: 10);
+  SelfAssemblyGame({required this.onScreenChange}) : super(gravity: Vector2.zero(), zoom: 10);
 
   @override
   Future<void> onLoad() async {
@@ -25,6 +35,9 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector, T
 
     entityManager = EntityManager();
     await add(entityManager);
+
+    // Initialize game state
+    gameState = GameState();
 
     // Dependencies
     final distanceCalculator = PeriodicDistanceCalculator(worldSize: worldSize);
@@ -41,6 +54,13 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector, T
     await add(FlowSystem(
       entityManager: entityManager,
       worldSize: worldSize,
+    ));
+    
+    // Add Hexamer Detection System
+    await add(HexamerDetectionSystem(
+      entityManager: entityManager,
+      eventBus: eventBus,
+      gameState: gameState,
     ));
     
     // Add Connection System
@@ -62,17 +82,87 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector, T
 
     // Initialize entity spawner
     entitySpawner = EntitySpawner();
+  }
+  
+  void startGame() {
+    _currentScreen = GameScreen.playing;
+    onScreenChange(_currentScreen);
     
-    // Test: Add multiple simple triangle bodies with two connectors
+    // Clear all existing bodies
+    for (final body in entityManager.bodies.toList()) {
+      entityManager.removeBody(body);
+    }
+    
+    // Start game state
+    gameState.startGame();
+    
+    // Add HUD
+    _gameHUD = GameHUD(gameState: gameState);
+    add(_gameHUD!);
+    
+    // Add initial bodies
     final initialBodies = entitySpawner.createInitialBodies(100, worldSize);
-    
     for (final body in initialBodies) {
       entityManager.addBody(body);
+    }
+  }
+  
+  void restartGame() {
+    _currentScreen = GameScreen.start;
+    onScreenChange(_currentScreen);
+    
+    // Remove HUD if it exists
+    if (_gameHUD != null) {
+      remove(_gameHUD!);
+      _gameHUD = null;
+    }
+    
+    // Clear all bodies
+    for (final body in entityManager.bodies.toList()) {
+      entityManager.removeBody(body);
+    }
+    
+    // Reset game state
+    gameState.reset();
+  }
+  
+  void _showResultScreen() {
+    _currentScreen = GameScreen.result;
+    onScreenChange(_currentScreen);
+    
+    // Remove HUD
+    if (_gameHUD != null) {
+      remove(_gameHUD!);
+      _gameHUD = null;
+    }
+  }
+  
+  @override
+  void update(double dt) {
+    super.update(dt);
+    
+    // Update timer if game is active
+    if (_currentScreen == GameScreen.playing) {
+      gameState.updateTimer(dt);
+      
+      // Check if game is over
+      if (gameState.isGameOver) {
+        _showResultScreen();
+      }
     }
   }
 
   @override
   void onTapDown(TapDownEvent event) {
+    // Only allow spawning during gameplay
+    if (_currentScreen != GameScreen.playing) return;
+    
+    // Check if player has enough points
+    if (!gameState.deductPoints(1)) {
+      // Not enough points
+      return;
+    }
+    
     // Convert screen position to world position
     final worldPosition = camera.viewfinder.globalToLocal(event.localPosition);
     
@@ -85,6 +175,9 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector, T
         initialPosition: worldPosition,
       );
       entityManager.addBody(newBody);
+      
+      // Register monomer spawned
+      gameState.registerMonomerSpawned();
     }
   }
 

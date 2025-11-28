@@ -25,6 +25,15 @@ class DetachmentEvent extends GameEvent {
   });
 }
 
+/// Event fired when a hexamer (6-part assembly) is formed
+class HexamerFormedEvent extends GameEvent {
+  final IAssemblyBody hexamer;
+
+  HexamerFormedEvent({
+    required this.hexamer,
+  });
+}
+
 /// Simple EventBus implementation using Dart Streams
 class EventBus implements IEventBus {
   final _controller = StreamController<GameEvent>.broadcast();
