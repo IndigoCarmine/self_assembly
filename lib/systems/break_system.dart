@@ -1,15 +1,11 @@
-import 'dart:math';
 import 'package:flame/components.dart';
 import '../interfaces/interfaces.dart';
-
-import '../events/event_bus.dart';
 
 class BreakSystem extends Component implements IBreakSystem {
   final IEntityManager entityManager;
   final IBodySplitter bodySplitter;
   final IEventBus eventBus;
   final BreakSystemConfig config;
-  final Random _rng = Random();
 
   BreakSystem({
     required this.entityManager,
@@ -20,8 +16,8 @@ class BreakSystem extends Component implements IBreakSystem {
 
   @override
   void update(double dt) {
-    super.update(dt);
-
+    // Temporarily disabled decomposition
+    /*
     final bodies = entityManager.bodies.toList(); // Copy to avoid concurrent modification
     
     for (final body in bodies) {
@@ -36,8 +32,10 @@ class BreakSystem extends Component implements IBreakSystem {
         }
       }
     }
+    */
   }
 
+  /*
   void _breakBody(IAssemblyBody body) {
     final newBodies = bodySplitter.split(body);
     
@@ -53,4 +51,5 @@ class BreakSystem extends Component implements IBreakSystem {
       newBodies: newBodies,
     ));
   }
+  */
 }

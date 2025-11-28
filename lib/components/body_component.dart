@@ -56,6 +56,23 @@ class SelfAssemblyBody extends BodyComponent implements IAssemblyBody {
         initialAngularVelocity = initialAngularVelocity ?? 0.0,
         renderer = renderer ?? BodyRenderer();
   
+  /// Create a copy of this body with different parameters
+  SelfAssemblyBody copyWith({
+    List<PolygonPart>? parts,
+    Vector2? initialPosition,
+    Vector2? initialLinearVelocity,
+    double? initialAngularVelocity,
+    IBodyRenderer? renderer,
+  }) {
+    return SelfAssemblyBody(
+      parts: parts ?? this.parts,
+      initialPosition: initialPosition ?? this.initialPosition,
+      initialLinearVelocity: initialLinearVelocity ?? this.initialLinearVelocity,
+      initialAngularVelocity: initialAngularVelocity ?? this.initialAngularVelocity,
+      renderer: renderer ?? this.renderer,
+    );
+  }
+  
   @override
   IPhysicsBody get physicsBody {
     _physicsBody ??= Forge2DPhysicsBody(body);

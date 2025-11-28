@@ -4,14 +4,17 @@ import '../managers/entity_manager.dart';
 import '../systems/periodic_boundary_system.dart';
 import '../systems/connection_system.dart';
 import '../systems/break_system.dart';
+import '../systems/flow_system.dart';
 import '../logic/body_merger.dart';
 import '../logic/body_splitter.dart';
 import '../logic/entity_spawner.dart';
 import '../interfaces/interfaces.dart';
 import '../events/event_bus.dart';
+import '../components/body_component.dart';
 
-class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
+class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector, TapCallbacks {
   late final EntityManager entityManager;
+  late final EntitySpawner entitySpawner;
   final Vector2 worldSize = Vector2(100, 100);
 
   SelfAssemblyGame() : super(gravity: Vector2.zero(), zoom: 10);
@@ -34,6 +37,12 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
     // Add Periodic Boundary System
     await add(PeriodicBoundarySystem(worldSize: worldSize));
     
+    // Add Flow System (activates every 10 seconds with random direction)
+    await add(FlowSystem(
+      entityManager: entityManager,
+      worldSize: worldSize,
+    ));
+    
     // Add Connection System
     await add(ConnectionSystem(
       entityManager: entityManager,
@@ -51,12 +60,31 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
       eventBus: eventBus,
     ));
 
+    // Initialize entity spawner
+    entitySpawner = EntitySpawner();
+    
     // Test: Add multiple simple triangle bodies with two connectors
-    final entitySpawner = EntitySpawner();
-    final initialBodies = entitySpawner.createInitialBodies(20, worldSize);
+    final initialBodies = entitySpawner.createInitialBodies(100, worldSize);
     
     for (final body in initialBodies) {
       entityManager.addBody(body);
+    }
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    // Convert screen position to world position
+    final worldPosition = camera.viewfinder.globalToLocal(event.localPosition);
+    
+    // Create a new triangle at the clicked position
+    final newBodies = entitySpawner.createInitialBodies(1, worldSize);
+    if (newBodies.isNotEmpty) {
+      final body = newBodies.first;
+      // Update the body's initial position to the click position
+      final newBody = (body as SelfAssemblyBody).copyWith(
+        initialPosition: worldPosition,
+      );
+      entityManager.addBody(newBody);
     }
   }
 

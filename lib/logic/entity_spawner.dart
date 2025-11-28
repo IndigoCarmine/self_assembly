@@ -12,10 +12,12 @@ class EntitySpawner implements IEntityFactory {
     final rng = Random();
 
     for (var i = 0; i < count; i++) {
-      // Triangle vertices
-      final v0 = Vector2(0, -2);
-      final v1 = Vector2(2, 2);
-      final v2 = Vector2(-2, 2);
+      // Equilateral triangle vertices (side length = 4)
+      // Center at origin, pointing upward
+      final height = 2 * sqrt(3); // Height of equilateral triangle with side 4
+      final v0 = Vector2(0, -height * 2 / 3);      // Top vertex
+      final v1 = Vector2(2, height / 3);            // Bottom-right vertex
+      final v2 = Vector2(-2, height / 3);           // Bottom-left vertex
       
       // Calculate edge midpoints and perpendicular angles
       // Edge 0-1 (top-right)

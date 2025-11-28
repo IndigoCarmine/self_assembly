@@ -42,8 +42,18 @@ class BodyMerger implements IBodyMerger {
     combinedParts.addAll(bodyA.parts);
     
     // Transform and add parts from bodyB
+    // We need to transform bodyB's parts from bodyB's local frame to bodyA's local frame
+    // For a point p in bodyB's local frame:
+    // - World position: posB + rotate(p, angleB)
+    // - bodyA's local frame: rotate(world_pos - posA, -angleA)
+    //                      = rotate(posB - posA + rotate(p, angleB), -angleA)
+    //                      = rotate(posB - posA, -angleA) + rotate(p, angleB - angleA)
     final deltaPos = posB - posA;
     final deltaAngle = angleB - angleA;
+    final rotatedDeltaPos = Vector2(
+      deltaPos.x * cos(-angleA) - deltaPos.y * sin(-angleA),
+      deltaPos.x * sin(-angleA) + deltaPos.y * cos(-angleA),
+    );
     
     for (final partB in bodyB.parts) {
       final transformedVertices = <Vector2>[];
@@ -52,7 +62,7 @@ class BodyMerger implements IBodyMerger {
           v.x * cos(deltaAngle) - v.y * sin(deltaAngle),
           v.x * sin(deltaAngle) + v.y * cos(deltaAngle),
         );
-        transformedVertices.add(rotated + deltaPos);
+        transformedVertices.add(rotated + rotatedDeltaPos);
       }
       
       final transformedConnectors = <Connector>[];
@@ -62,7 +72,7 @@ class BodyMerger implements IBodyMerger {
           conn.relativePosition.x * sin(deltaAngle) + conn.relativePosition.y * cos(deltaAngle),
         );
         transformedConnectors.add(Connector(
-          relativePosition: rotatedPos + deltaPos,
+          relativePosition: rotatedPos + rotatedDeltaPos,
           relativeAngle: conn.relativeAngle + deltaAngle,
           type: conn.type,
         ));

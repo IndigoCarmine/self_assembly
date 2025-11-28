@@ -88,6 +88,23 @@ class ConnectionSystem extends Component implements IConnectionSystem {
                 // Check angle alignment
                 final angleDiff = _normalizeAngle(connAAngle - connBAngle);
                 if ((angleDiff - pi).abs() < config.angleThreshold) {
+                  // Align bodies before merging
+                  // Calculate the required angle for bodyB so connB faces opposite to connA
+                  final targetAngleB = connAAngle + pi - connB.relativeAngle;
+                  
+                  // Calculate the required position for bodyB
+                  // After setting bodyB's angle to targetAngleB, connB's world position will be:
+                  // targetPosB + rotate(connB.relativePosition, targetAngleB)
+                  // We want this to equal connAPos
+                  final rotatedConnBPos = Vector2(
+                    connB.relativePosition.x * cos(targetAngleB) - connB.relativePosition.y * sin(targetAngleB),
+                    connB.relativePosition.x * sin(targetAngleB) + connB.relativePosition.y * cos(targetAngleB),
+                  );
+                  final targetPosB = connAPos - rotatedConnBPos;
+                  
+                  // Apply corrections to bodyB BEFORE merging
+                  physicsB.setTransform(targetPosB, targetAngleB);
+                  
                   // Connect!
                   final newBody = bodyMerger.merge(bodyA, bodyB, connA, connB);
                   entityManager.removeBody(bodyA);
