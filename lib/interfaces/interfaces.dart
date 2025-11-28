@@ -27,7 +27,6 @@ abstract class IEntityManager {
   void addBody(IAssemblyBody body);
   
   /// ボディを削除（次のフレームで反映）
-  /// ボディを削除（次のフレームで反映）
   void removeBody(IAssemblyBody body);
 }
 

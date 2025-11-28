@@ -1,11 +1,17 @@
+import 'dart:math';
 import 'package:flame/components.dart';
 import '../interfaces/interfaces.dart';
+import '../events/event_bus.dart';
 
+/// System responsible for breaking apart connected bodies based on probability.
+/// 
+/// Currently disabled but can be re-enabled by uncommenting the logic in update().
 class BreakSystem extends Component implements IBreakSystem {
   final IEntityManager entityManager;
   final IBodySplitter bodySplitter;
   final IEventBus eventBus;
   final BreakSystemConfig config;
+  final Random _rng = Random();
 
   BreakSystem({
     required this.entityManager,
@@ -17,6 +23,7 @@ class BreakSystem extends Component implements IBreakSystem {
   @override
   void update(double dt) {
     // Temporarily disabled decomposition
+    // TODO: Re-enable when break system is needed by uncommenting the code below
     /*
     final bodies = entityManager.bodies.toList(); // Copy to avoid concurrent modification
     
@@ -33,9 +40,11 @@ class BreakSystem extends Component implements IBreakSystem {
       }
     }
     */
+    
+    // Suppress unused field warning while functionality is disabled
+    _rng;
   }
 
-  /*
   void _breakBody(IAssemblyBody body) {
     final newBodies = bodySplitter.split(body);
     
@@ -51,5 +60,4 @@ class BreakSystem extends Component implements IBreakSystem {
       newBodies: newBodies,
     ));
   }
-  */
 }
