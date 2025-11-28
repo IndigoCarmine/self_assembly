@@ -1,11 +1,11 @@
-/// インターフェース定義ファイル
-/// 
-/// このファイルは、並行開発を可能にするための抽象インターフェースを定義します。
-/// 各インターフェースは具象クラスから分離されており、依存性逆転の原則（DIP）に従っています。
-/// 
-/// ## 使用方法
-/// 実装クラスは対応するインターフェースを実装（implements）してください。
-/// システムクラスは具象クラスではなく、これらのインターフェースに依存してください。
+// インターフェース定義ファイル
+// 
+// このファイルは、並行開発を可能にするための抽象インターフェースを定義します。
+// 各インターフェースは具象クラスから分離されており、依存性逆転の原則（DIP）に従っています。
+// 
+// ## 使用方法
+// 実装クラスは対応するインターフェースを実装（implements）してください。
+// システムクラスは具象クラスではなく、これらのインターフェースに依存してください。
 
 import 'dart:ui' show Canvas;
 import 'package:flame/components.dart';
@@ -216,11 +216,17 @@ class PeriodicDistanceCalculator implements IDistanceCalculator {
     var dx = to.x - from.x;
     var dy = to.y - from.y;
 
-    if (dx > _halfWorldSize.x) dx -= worldSize.x;
-    else if (dx < -_halfWorldSize.x) dx += worldSize.x;
+    if (dx > _halfWorldSize.x) {
+      dx -= worldSize.x;
+    } else if (dx < -_halfWorldSize.x) {
+      dx += worldSize.x;
+    }
 
-    if (dy > _halfWorldSize.y) dy -= worldSize.y;
-    else if (dy < -_halfWorldSize.y) dy += worldSize.y;
+    if (dy > _halfWorldSize.y) {
+      dy -= worldSize.y;
+    } else if (dy < -_halfWorldSize.y) {
+      dy += worldSize.y;
+    }
 
     return Vector2(dx, dy);
   }
