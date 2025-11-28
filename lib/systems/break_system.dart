@@ -2,15 +2,19 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import '../interfaces/interfaces.dart';
 
+import '../events/event_bus.dart';
+
 class BreakSystem extends Component implements IBreakSystem {
   final IEntityManager entityManager;
   final IBodySplitter bodySplitter;
+  final IEventBus eventBus;
   final BreakSystemConfig config;
   final Random _rng = Random();
 
   BreakSystem({
     required this.entityManager,
     required this.bodySplitter,
+    required this.eventBus,
     this.config = const BreakSystemConfig(),
   });
 
@@ -43,5 +47,10 @@ class BreakSystem extends Component implements IBreakSystem {
     
     // Remove the original combined body
     entityManager.removeBody(body);
+
+    eventBus.fire(DetachmentEvent(
+      originalBody: body,
+      newBodies: newBodies,
+    ));
   }
 }

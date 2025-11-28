@@ -2,12 +2,15 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import '../interfaces/interfaces.dart';
 
+import '../events/event_bus.dart';
+
 class ConnectionSystem extends Component implements IConnectionSystem {
   final IEntityManager entityManager;
   final IDistanceCalculator distanceCalculator;
   final IForceModel forceModel;
   final IConnectorCompatibility connectorCompatibility;
   final IBodyMerger bodyMerger;
+  final IEventBus eventBus;
   final ConnectionSystemConfig config;
 
   ConnectionSystem({
@@ -16,6 +19,7 @@ class ConnectionSystem extends Component implements IConnectionSystem {
     required this.forceModel,
     required this.connectorCompatibility,
     required this.bodyMerger,
+    required this.eventBus,
     this.config = const ConnectionSystemConfig(),
   });
 
@@ -89,6 +93,13 @@ class ConnectionSystem extends Component implements IConnectionSystem {
                   entityManager.removeBody(bodyA);
                   entityManager.removeBody(bodyB);
                   entityManager.addBody(newBody);
+                  
+                  eventBus.fire(ConnectionEvent(
+                    bodyA: bodyA,
+                    bodyB: bodyB,
+                    newBody: newBody,
+                  ));
+                  
                   return; // Stop processing these bodies
                 }
               } else if (dist < config.attractionRange) {

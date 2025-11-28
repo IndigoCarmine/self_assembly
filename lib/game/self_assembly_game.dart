@@ -8,6 +8,7 @@ import '../logic/body_merger.dart';
 import '../logic/body_splitter.dart';
 import '../logic/entity_spawner.dart';
 import '../interfaces/interfaces.dart';
+import '../events/event_bus.dart';
 
 class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
   late final EntityManager entityManager;
@@ -28,6 +29,7 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
     final connectorCompatibility = PlusMinusCompatibility();
     final bodyMerger = BodyMerger();
     final bodySplitter = BodySplitter();
+    final eventBus = EventBus();
 
     // Add Periodic Boundary System
     await add(PeriodicBoundarySystem(worldSize: worldSize));
@@ -39,12 +41,14 @@ class SelfAssemblyGame extends Forge2DGame with ScrollDetector, ScaleDetector {
       forceModel: forceModel,
       connectorCompatibility: connectorCompatibility,
       bodyMerger: bodyMerger,
+      eventBus: eventBus,
     ));
     
     // Add Break System
     await add(BreakSystem(
       entityManager: entityManager,
       bodySplitter: bodySplitter,
+      eventBus: eventBus,
     ));
 
     // Test: Add multiple simple triangle bodies with two connectors

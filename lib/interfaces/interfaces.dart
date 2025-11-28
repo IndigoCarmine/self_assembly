@@ -27,12 +27,39 @@ abstract class IEntityManager {
   void addBody(IAssemblyBody body);
   
   /// ボディを削除（次のフレームで反映）
+  /// ボディを削除（次のフレームで反映）
   void removeBody(IAssemblyBody body);
 }
 
 // =============================================================================
 // ボディインターフェース
 // =============================================================================
+
+/// 物理ボディへのアクセスを提供するインターフェース
+/// 
+/// Forge2DのBodyをラップして抽象化
+abstract class IPhysicsBody {
+  /// 現在の位置
+  Vector2 get position;
+  
+  /// 現在の角度（ラジアン）
+  double get angle;
+  
+  /// 線形速度
+  Vector2 get linearVelocity;
+  
+  /// 角速度
+  double get angularVelocity;
+  
+  /// 質量
+  double get mass;
+  
+  /// 力を適用
+  void applyForce(Vector2 force, {Vector2? point});
+  
+  /// トランスフォームを設定
+  void setTransform(Vector2 position, double angle);
+}
 
 /// 自己組織化ボディのインターフェース
 /// 
@@ -46,19 +73,6 @@ abstract class IAssemblyBody {
   
   /// 物理ボディへのアクセス
   IPhysicsBody get physicsBody;
-}
-
-/// 物理ボディへのアクセスを提供するインターフェース
-/// 
-/// Forge2DのBodyをラップして抽象化
-abstract class IPhysicsBody {
-  /// 現在の位置
-  Vector2 get position;
-  
-  /// 現在の角度（ラジアン）
-  double get angle;
-  
-  /// 線形速度
   Vector2 get linearVelocity;
   
   /// 角速度
@@ -255,6 +269,24 @@ abstract class IBodyMerger {
     Connector connA,
     Connector connB,
   );
+}
+
+// =============================================================================
+// イベントバスインターフェース
+// =============================================================================
+
+/// ゲームイベントの基底クラス
+abstract class GameEvent {}
+
+/// イベントバスのインターフェース
+/// 
+/// システム間の疎結合な通信を実現する
+abstract class IEventBus {
+  /// 特定のイベントタイプを購読
+  Stream<T> on<T extends GameEvent>();
+  
+  /// イベントを発火
+  void fire(GameEvent event);
 }
 
 // =============================================================================

@@ -94,6 +94,25 @@ class SelfAssemblyBody extends BodyComponent implements IAssemblyBody {
   }
 
   @override
+  Vector2 get linearVelocity => body.linearVelocity;
+
+  @override
+  double get angularVelocity => body.angularVelocity;
+
+  @override
+  double get mass => body.mass;
+
+  @override
+  void applyForce(Vector2 force, {Vector2? point}) {
+    body.applyForce(force, point: point);
+  }
+
+  @override
+  void setTransform(Vector2 position, double angle) {
+    body.setTransform(position, angle);
+  }
+
+  @override
   void render(Canvas canvas) {
     super.render(canvas);
     

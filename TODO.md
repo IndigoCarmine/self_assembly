@@ -24,27 +24,27 @@
     - [ ] Define connection state management.
 
 ## Systems
-- [ ] **ConnectionSystem**
-    - [ ] Design the connector scanning algorithm (neighbor search).
-    - [ ] Implement Attraction Model (B):
-        - [ ] Calculate distance `d` (considering periodic boundary).
-        - [ ] Apply force `F(d)` (short-range strong, long-range weak).
-    - [ ] Implement Alignment Logic (A):
-        - [ ] Define conditions for connection (distance, angle).
-        - [ ] Design position correction (snap to exact match).
-        - [ ] Design angle correction.
-        - [ ] Design Body integration (merging fixtures and updating `BodyComponent`s).
+- [x] **ConnectionSystem**
+    - [x] Design the connector scanning algorithm (neighbor search).
+    - [x] Implement Attraction Model (B):
+        - [x] Calculate distance `d` (considering periodic boundary).
+        - [x] Apply force `F(d)` (short-range strong, long-range weak).
+    - [x] Implement Alignment Logic (A):
+        - [x] Define conditions for connection (distance, angle).
+        - [x] Design position correction (snap to exact match).
+        - [x] Design angle correction.
+        - [x] Design Body integration (merging fixtures and updating `BodyComponent`s).
 
-- [ ] **BreakSystem**
-    - [ ] Design detachment probability model (time-based).
-    - [ ] Implement detachment logic:
-        - [ ] Decompose Body into `PolygonPart`s.
-        - [ ] Regenerate Bodies (create new `BodyComponent`s).
+- [x] **BreakSystem**
+    - [x] Design detachment probability model (time-based).
+    - [x] Implement detachment logic:
+        - [x] Decompose Body into `PolygonPart`s.
+        - [x] Regenerate Bodies (create new `BodyComponent`s).
     - [ ] Define event notification priority (Priority A).
 
-- [ ] **EventBus**
-    - [ ] Define event types: `ConnectionEvent`, `DetachmentEvent`.
-    - [ ] Design subscription mechanism for World, EntityManager, UI (using Dart Streams or ValueNotifiers).
+- [x] **EventBus**
+    - [x] Define event types: `ConnectionEvent`, `DetachmentEvent`.
+    - [x] Design subscription mechanism for World, EntityManager, UI (using Dart Streams or ValueNotifiers).
 
 ## Space & Physics
 - [x] **PeriodicBoundarySystem**
