@@ -5,12 +5,15 @@ import '../events/event_bus.dart';
 
 /// System responsible for breaking apart connected bodies based on probability.
 /// 
-/// Currently disabled but can be re-enabled by uncommenting the logic in update().
+/// Currently disabled. To re-enable, uncomment the body-breaking logic in [update]
+/// which uses [_breakBody] to split bodies and fire [DetachmentEvent].
 class BreakSystem extends Component implements IBreakSystem {
   final IEntityManager entityManager;
   final IBodySplitter bodySplitter;
   final IEventBus eventBus;
   final BreakSystemConfig config;
+  
+  // ignore: unused_field
   final Random _rng = Random();
 
   BreakSystem({
@@ -40,9 +43,6 @@ class BreakSystem extends Component implements IBreakSystem {
       }
     }
     */
-    
-    // Suppress unused field warning while functionality is disabled
-    _rng;
   }
 
   void _breakBody(IAssemblyBody body) {
